@@ -19,8 +19,9 @@ As an example (with \* representing the cursor position),
   obj.sFM* --> (invoke camelcomplete) --> obj.setForwardMark*
 ```
 
-**Note**: for performance, this plugin is written in `vim9script` so you'll need
-Vim 9 (or perhaps a late 8.2 would work as well, though I haven't tested it).
+**Note**: for performance (well, at least compared with legacy Vimscript), this plugin is
+written in `vim9script` so you'll need Vim 9 (or perhaps a late 8.2 would work as well,
+though I haven't tested it).
 
 ## Installation
 
