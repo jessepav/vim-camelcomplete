@@ -4,8 +4,13 @@ Vim 9 plugin to complete `CamelCase` and `snake_case` identifier abbreviations.
 
 ## Introduction
 
-This plugin provides an insert-mode completion function that allows you to expand
-`CamelCase` and `snake_case` abbreviations into their full identifiers.  For instance,
+This plugin provides a lightweight insert-mode completion function that allows you to
+expand `CamelCase` and `snake_case` abbreviations into their full identifiers. It is
+purely textual, and doesn't require setting up language servers or defining a project
+structure; rather, it operates like `<C-P>/<C-N>`, but on identifier abbreviations rather
+than prefixes.
+
+For instance,
 
 | Identifier       | Abbreviation |
 | :--------------- | :----------- |
