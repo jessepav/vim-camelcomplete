@@ -109,6 +109,11 @@ Fast Buffer Scans ~
   listed buffers, the command will run quickly since unmodified buffers are
   skipped.
 
+  If, however, you're editing a very large buffer (in which case it will be
+  scanned every time), you can use <C-X><C-U> to complete instantly most of
+  the time, and your `CamelCompleteRefresh` mapping only when you need the
+  plugin to discover new identifiers.
+
 Candidate Ordering ~
 
   Even if the abbreviation-identifier index contains entries from all buffers,
