@@ -151,8 +151,14 @@ enddef
 # If `casefold` is true, then abbreviations (i.e. the keys in the dict) will be lowercase.
 #
 def ProcessBuffer(bufnr: number, abbrev_dict: dict<list<string>>, casefold: bool)
+  # Keep track of words we've already encountered, so that we can `continue` the loop
+  # early and avoid the expensive splitting and joining further down.
+  final seen_words: dict<bool> = {}
   for line in getbufline(bufnr, 1, '$')
     for word in MatchAll(line, gather_words_re)
+      if has_key(seen_words, word)
+        continue
+      endif
       var parts = split(word, split_word_re, false)
       if len(parts) == 1  # There's no point in indexing this
         continue
@@ -164,9 +170,10 @@ def ProcessBuffer(bufnr: number, abbrev_dict: dict<list<string>>, casefold: bool
       final wordlist: list<string> = get(abbrev_dict, abbrev, null_list)
       if wordlist == null_list
         abbrev_dict[abbrev] = [word]
-      elseif index(wordlist, word) == -1
+      else  # We are guaranteed not to have seen the word before
         add(wordlist, word)
       endif
+      seen_words[word] = true
     endfor
   endfor
 enddef
