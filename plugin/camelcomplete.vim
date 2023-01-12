@@ -8,10 +8,7 @@ vim9script
                         # CamelComplete, as in the days of old! #
                         #########################################
 
-# pattern to gather up applicable words (in this case, those over 4 letters) from buffers
-const gather_words_re = '\w\{4,}'
-
-# and once we gather words, we split them into camelCase or snake_case parts
+# Regex to split words into camelCase or snake_case parts
 const split_word_re   = '\%([a-z]\zs\ze[A-Z]\)\|_\+\|\%(\d\zs\ze\a\)\|\%(\a\zs\ze\d\)'
 
 # Our main index, which maps {bufnr: [b:changetick, abbrev_dict]}
@@ -155,8 +152,8 @@ def ProcessBuffer(bufnr: number, abbrev_dict: dict<list<string>>, casefold: bool
   # early and avoid the expensive splitting and joining further down.
   final seen_words: dict<bool> = {}
   for line in getbufline(bufnr, 1, '$')
-    for word in MatchAll(line, gather_words_re)
-      if has_key(seen_words, word)
+    for word in split(line, '\W\+')
+      if len(word) < 4 || has_key(seen_words, word)
         continue
       endif
       var parts = split(word, split_word_re, false)
@@ -176,22 +173,6 @@ def ProcessBuffer(bufnr: number, abbrev_dict: dict<list<string>>, casefold: bool
       seen_words[word] = true
     endfor
   endfor
-enddef
-
-#
-# Returns a list of all the matches of `pattern` in `str`
-#
-def MatchAll(str: string, pattern: string): list<string>
-  var matches: list<string> = []
-  var pos = 0
-  while pos != -1
-    const [mstr, start, end] = matchstrpos(str, pattern, pos)
-    pos = end
-    if pos != -1
-      add(matches, mstr)
-    endif
-  endwhile
-  return matches
 enddef
 
 #
