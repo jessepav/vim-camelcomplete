@@ -11,13 +11,16 @@ vim9script
 # Regex to split words into camelCase or snake_case parts
 const split_word_re   = '\%([a-z]\zs\ze[A-Z]\)\|_\+\|\%(\d\zs\ze\a\)\|\%(\a\zs\ze\d\)'
 
-# Our main index, which maps {bufnr: [b:changetick, abbrev_dict]}
+# Our main index, which maps {bufnr: [b:changetick, abbrev_dict]}. An 'abbrev_dict', used
+# throughout the plugin, is a mapping from an abbreviation, like 'aSD' to a list of
+# possible completion entries, ex. ['allSaintsDay', 'avoidSomeDisaster']
 var buffer_abbrev_table: dict<list<any>> = {}
 
 # Used for regenerating our table if necessary
 var last_refresh_mode: number = 0
 var last_casefold: bool = false
 
+# CamelComplete() {{{1
 #
 # A completion function (:h complete-functions), for use with 'completefunc' or 'omnifunc'
 #
@@ -67,6 +70,8 @@ def CamelComplete(findstart: number, base_: string): any
   endif
 enddef
 
+# RefreshAbbrevTable() {{{1
+#
 # Goes through all listed buffers to refresh our abbreviation table from the buffers
 # indicated by `mode`:
 #
@@ -142,6 +147,7 @@ def RefreshAbbrevTable(mode_: number, force_: bool = false)
   last_casefold = casefold
 enddef
 
+# ProcessBuffer() {{{1
 #
 # Parses the text of buffer with number `bufnr` to find all applicable words and add
 # mappings in `abbrev_dict` from their abbreviations to a list of matching words.
@@ -175,6 +181,7 @@ def ProcessBuffer(bufnr: number, abbrev_dict: dict<list<string>>, casefold: bool
   endfor
 enddef
 
+# DumpBufAbbrevMap() {{{1
 #
 # Print out our main abbreviation table. If `prettyprint` is true, use `jq` to format the
 # abbreviation table as JSON
@@ -187,6 +194,8 @@ def DumpBufAbbrevMap(prettyprint: bool = false)
   endif
 enddef
 
+# Debugprint() {{{1
+#
 def Debugprint(msg: string)
   if exists("g:camelcomplete_debug") && g:camelcomplete_debug != 0
     echo msg
@@ -195,7 +204,10 @@ def Debugprint(msg: string)
     endif
   endif
 enddef
-# ----------------- Mappings and such --------------------
+
+# }}}1
+
+# -------------------- Mappings and such --------------------
 
 nnoremap <Plug>CamelCompleteRefreshCurrentBuffer  <ScriptCmd>RefreshAbbrevTable(1)<CR>
 nnoremap <Plug>CamelCompleteRefreshVisibleBuffers <ScriptCmd>RefreshAbbrevTable(2)<CR>
@@ -213,4 +225,4 @@ if empty(&completefunc)
   set completefunc=CamelComplete
 endif
 
-# vim: set tw=90 sw=2 ts=2:
+# vim: set tw=90 sw=2 ts=2 fdm=marker:
