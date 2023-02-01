@@ -49,10 +49,10 @@ In your `.vimrc`, add these lines
   imap <C-X><C-A>    <Plug>CamelCompleteRefreshAndComplete
 ```
 
-This will set `'completefunc'` to a script-local completion function in
-`camelcomplete.vim`, and set up `<C-X><C-A>` to scan all listed buffers and complete the
+This will set `'completefunc'` to a script‑local completion function in
+`camelcomplete.vim`, and set up `<C‑X><C‑A>` to scan all listed buffers and complete the
 abbreviation before the cursor. You can, of course, use any `{lhs}` mapping you'd like. I
-prefer `<M-/>`, since it's only one keystroke, but some terminals won't register `<M-/>`
+prefer `<M‑/>`, since it's only one keystroke, but some terminals won't register `<M‑/>`
 properly.
 
 ## More Information
