@@ -43,9 +43,11 @@ def CamelComplete(findstart: number, base_: string): any
     # All the abbrev dicts that we'll examine in our loop below
     final abbrev_dicts: list<dict<list<string>>> = []
 
-    # We do the current buffer's wordlist first
+    # We do the current buffer's wordlist first, if it's available
     const cur_bufnr = string(bufnr())
-    add(abbrev_dicts, buffer_abbrev_table[cur_bufnr][1])
+    if has_key(buffer_abbrev_table, cur_bufnr)
+      add(abbrev_dicts, buffer_abbrev_table[cur_bufnr][1])
+    endif
     # And then add the rest
     for bufnr in keys(buffer_abbrev_table)
       if bufnr !=# cur_bufnr
@@ -194,6 +196,14 @@ def DumpBufAbbrevMap(prettyprint: bool = false)
   endif
 enddef
 
+# ClearAbbrevMap() {{{1
+#
+# Clear the main abbreviation table -- useful during profiling.
+#
+def ClearAbbrevMap()
+  filter(buffer_abbrev_table, (k, v) => false)
+enddef
+
 # Debugprint() {{{1
 #
 def Debugprint(msg: string)
@@ -218,8 +228,9 @@ inoremap <Plug>CamelCompleteRefreshAllBuffers     <ScriptCmd>RefreshAbbrevTable(
 
 inoremap <Plug>CamelCompleteRefreshAndComplete    <ScriptCmd>RefreshAbbrevTable(3)<CR><C-X><C-U>
 
-command! -nargs=? CamelCompleteDumpBufAbbrevMap   DumpBufAbbrevMap(<args>)
 command! -nargs=0 CamelCompleteInstall            set completefunc=CamelComplete
+command! -nargs=? CamelCompleteDumpBufAbbrevMap   DumpBufAbbrevMap(<args>)
+command! -nargs=0 CamelCompleteClearAbbrevMap     ClearAbbrevMap()
 
 if empty(&completefunc)
   set completefunc=CamelComplete
