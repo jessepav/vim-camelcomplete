@@ -1,15 +1,31 @@
 vim9script
 
 # Vim plugin for completing CamelCase and snake_case words from their abbreviations.
-# Last Change: January 11, 2023
+# Last Change: May 18, 2023
 # Maintainer:	Jesse Pavel <jpavel@gmail.com>
 
                         #########################################
                         # CamelComplete, as in the days of old! #
                         #########################################
 
-# Regex to split words into camelCase or snake_case parts
-const split_word_re   = '\%([a-z]\zs\ze[A-Z]\)\|_\+\|\%(\d\zs\ze\a\)\|\%(\a\zs\ze\d\)'
+# Regex to split words into camelCase or snake_case parts.
+#
+# It's composed of four parts:
+#
+#  1. lowercase to uppercase transition
+#  2. underscore
+#  3. digit to an alphabetic character transition
+#  4. alphabetic character to a digit transition
+#
+const split_word_re = ['\%([a-z]\zs\ze[A-Z]\)',
+                       '_\+',
+                       '\%(\d\zs\ze\a\)',
+                       '\%(\a\zs\ze\d\)']->join('\|')
+
+# These regexps are used to split a line into words, depending on whether
+# a dash '-' is a valid part of an identifier.
+const split_line_nodash_re = '\W\+'
+const split_line_dash_re = '[^A-Za-z0-9_-]\+'
 
 # Our main index, which maps {bufnr: [b:changetick, abbrev_dict]}. An 'abbrev_dict', used
 # throughout the plugin, is a mapping from an abbreviation, like 'aSD' to a list of
@@ -156,15 +172,30 @@ enddef
 # If `casefold` is true, then abbreviations (i.e. the keys in the dict) will be lowercase.
 #
 def ProcessBuffer(bufnr: number, abbrev_dict: dict<list<string>>, casefold: bool)
+  # If the language of a buffer has dashes in keywords (like CSS or HTML),
+  # then we will handle dashes in our abbreviations.
+  const isk = getbufvar(bufnr, '&iskeyword')
+  # HTML normally doesn't have '-' in iskeyword, so we treat it specially.
+  const dash_in_keywords: bool =
+          getbufvar(bufnr, '&filetype') == 'html' ||
+          stridx(isk, ',-') != -1 || stridx(isk, '-,') != -1
+  const split_line_re = dash_in_keywords ? split_line_dash_re : split_line_nodash_re
   # Keep track of words we've already encountered, so that we can `continue` the loop
   # early and avoid the expensive splitting and joining further down.
   final seen_words: dict<bool> = {}
   for line in getbufline(bufnr, 1, '$')
-    for word in split(line, '\W\+')
+    for word in split(line, split_line_re)
       if len(word) < 4 || has_key(seen_words, word)
         continue
       endif
-      var parts = split(word, split_word_re, false)
+      var parts: list<string>
+      # If a language allows dashes in keywords and this word has a dash, assume that the
+      # dashes are what separates the components rather than the usual camel-transitions.
+      if dash_in_keywords && stridx(word, '-') != -1
+        parts = split(word, '-', false)
+      else
+        parts = split(word, split_word_re, false)
+      endif
       if len(parts) == 1  # There's no point in indexing this
         continue
       endif
