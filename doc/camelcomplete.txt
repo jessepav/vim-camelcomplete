@@ -15,13 +15,14 @@ License: MIT
 INTRODUCTION				    *camelcomplete* *CamelComplete*
 
 This plugin provides an insert-mode completion function that allows you to
-expand CamelCase and snake_case abbreviations into their full identifiers.
-For instance,
+expand `CamelCase`, `snake_case`, and (if appropriate for the filetype) `dash-words`
+abbreviations into their full identifiers.  For instance,
 
   Identifier		Abbreviation ~
   setForwardMark	`sFM`
   open_last_file	`olf`
   channel34Types	`c3T`
+  margin-top		`mt`
 
 As an example (with * representing the cursor position),
 >

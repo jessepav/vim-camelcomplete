@@ -5,10 +5,10 @@ Vim 9 plugin to complete `CamelCase` and `snake_case` identifier abbreviations.
 ## Introduction
 
 This plugin provides a lightweight insert-mode completion function that allows you to
-expand `CamelCase` and `snake_case` abbreviations into their full identifiers. It is
-purely textual, and doesn't require setting up language servers or defining a project
-structure; rather, it operates like `<C-P>/<C-N>`, but on identifier abbreviations rather
-than prefixes.
+expand `CamelCase`, `snake_case`, and `dash-words` abbreviations into their full
+identifiers. It is purely textual, and doesn't require setting up language servers or
+defining a project structure; rather, it operates like `<C-P>/<C-N>`, but on identifier
+abbreviations rather than prefixes.
 
 For instance,
 
@@ -17,6 +17,7 @@ For instance,
 | `setForwardMark` | `sFM`        |
 | `open_last_file` | `olf`        |
 | `channel34Types` | `c3T`        |
+| `margin-top`     | `mt`         |
 
 As an example (with \* representing the cursor position),
 
