@@ -1,6 +1,16 @@
 # vim-camelcomplete
 
-Vim 9 plugin to complete `CamelCase` and `snake_case` identifier abbreviations.
+Vim Lua plugin to complete `CamelCase`, `snake_case`, and `dash-words` identifier
+abbreviations.
+
+I'd originally written this plugin in `vim9script`, but it turned out to be too slow for
+processing large buffers without delay. Using LuaJIT, the current version is very fast;
+though I don't know what performance would be like using the PUC Lua interpreter.
+
+The `vim9script` branch is still available:
+
+  https://github.com/jessepav/vim-camelcomplete/tree/master
+
 
 ## Introduction
 
@@ -25,10 +35,6 @@ As an example (with \* representing the cursor position),
   obj.sFM* --> (invoke camelcomplete) --> obj.setForwardMark*
 ```
 
-**Note**: for performance (well, at least compared with legacy Vimscript), this plugin is
-written in `vim9script` so you'll need Vim 9 (or perhaps a late 8.2 would work as well,
-though I haven't tested it).
-
 ## Installation
 
 Use your favorite plugin manager.
@@ -39,6 +45,16 @@ For instace, with [vim-plug](https://github.com/junegunn/vim-plug):
 Plug 'jessepav/vim-camelcomplete'
 ```
 
+Also (ay...) the plugin uses a few Lua modules for regexp ergonomics and JSON encoding.
+The easiest way to get these modules up and running is by using LuaRocks.
+
+On a a Debian/Ubuntu system:
+
+```sh
+sudo apt install luarocks
+sudo luarocks install lrexlib-pcre2 dkjson
+```
+
 ## Usage
 
 Quick Start:
@@ -46,17 +62,16 @@ Quick Start:
 In your `.vimrc`, add these lines
 
 ```
-  CamelCompleteInstall
+  set completefunc=CamelCompleteFunc
   imap <C-X><C-A>    <Plug>CamelCompleteRefreshAndComplete
 ```
 
-This will set `'completefunc'` to a script‑local completion function in
-`camelcomplete.vim`, and set up `<C‑X><C‑A>` to scan all listed buffers and complete the
-abbreviation before the cursor. You can, of course, use any `{lhs}` mapping you'd like. I
-prefer `<M‑/>`, since it's only one keystroke, but some terminals won't register `<M‑/>`
-properly.
+This will set `'completefunc'` to a completion function in `camelcomplete.vim`, and set up
+`<C‑X><C‑A>` to scan all listed buffers and complete the abbreviation before the cursor.
+You can, of course, use any `{lhs}` mapping you'd like. I prefer `<M‑/>`, since it's only
+one keystroke, but some terminals won't register `<M‑/>` properly.
 
 ## More Information
 
-See [`doc/camelcomplete.txt`](https://github.com/jessepav/vim-camelcomplete/blob/master/doc/camelcomplete.txt)
+See [`doc/camelcomplete.txt`](https://github.com/jessepav/vim-camelcomplete/blob/lua/doc/camelcomplete.txt)
 for more details.

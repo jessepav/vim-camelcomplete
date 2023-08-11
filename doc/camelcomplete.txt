@@ -28,8 +28,8 @@ As an example (with * representing the cursor position),
 >
   obj.sFM* --> (invoke camelcomplete) --> obj.setForwardMark*
 <
-Note: for performance, this plugin is written in `vim9script` so you'll need
-Vim 9 (or perhaps a late 8.2 would work as well, though I haven't tested it).
+Note: for performance, this plugin is written in Lua so you'll need a Vim
+built with `+lua`, preferably using LuaJIT.
 
 =============================================================================
 
@@ -42,14 +42,14 @@ Quick Start:
 
 In your `.vimrc`, add these lines
 >
-  CamelCompleteInstall
+  set completefunc=CamelCompleteFunc
   imap <C-X><C-A>    <Plug>CamelCompleteRefreshAndComplete
 <
-This will set 'completefunc' to a script-local completion function in
-`camelcomplete.vim`, and set up <C-X><C-A> to scan all listed buffers and
-complete the abbreviation before the cursor. You can, of course, use any {lhs}
-mapping you'd like. I prefer <M-/>, since it's only one keystroke, but some
-terminals won't register <M-/> properly.
+This will set 'completefunc' to a completion function in `camelcomplete.vim`,
+and set up <C-X><C-A> to scan all listed buffers and complete the abbreviation
+before the cursor. You can, of course, use any {lhs} mapping you'd like. I
+prefer <M-/>, since it's only one keystroke, but some terminals won't register
+<M-/> properly.
 
 Two global variables control how abbreviation matching is performed:
 >
@@ -91,12 +91,6 @@ perform completion, you could for instance use
 
   imap <C-X><C-B> <Plug>CamelCompleteRefreshCurrentBuffer<C-X><C-U>
 
-
-`CamelCompleteInstall`				    *CamelCompleteInstall*
-
-This command simply sets 'completefunc' to the script-local `CamelComplete`
-function. It exists only because `CamelComplete()` is not globally visible.
-
 =============================================================================
 
 NOTES						   *camelcomplete-notes*
@@ -119,7 +113,7 @@ Candidate Ordering ~
 
   Even if the abbreviation-identifier index contains entries from all buffers,
   camelcomplete will put identifiers from the current buffer at the top of the
-  completion popup. 
-  
+  completion popup.
+
 =============================================================================
  vim:tw=78:isk=!-~,^*,^\|,^\":ts=8:noet:ft=help:norl:
