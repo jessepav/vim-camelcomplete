@@ -1,4 +1,4 @@
-*camelcomplete.txt* Plugin for CamelCase and snake_case completion.
+*camelcomplete.txt* Plugin for CamelCase, snake_case, and dash-words completion.
 
 Author:  Jesse Pavel <jpavel@gmail.com>
 License: MIT
@@ -28,8 +28,9 @@ As an example (with * representing the cursor position),
 >
   obj.sFM* --> (invoke camelcomplete) --> obj.setForwardMark*
 <
-Note: for performance, this plugin is written in `vim9script` so you'll need
-Vim 9 (or perhaps a late 8.2 would work as well, though I haven't tested it).
+Note: for performance, this plugin is written in `vim9script` using the
+`matchbufline()` and `matchstrlist()` functions introduced in Vim `v9.1.0009`,
+and thus you'll need a sufficiently new version of Vim to use it.
 
 =============================================================================
 
@@ -119,7 +120,7 @@ Candidate Ordering ~
 
   Even if the abbreviation-identifier index contains entries from all buffers,
   camelcomplete will put identifiers from the current buffer at the top of the
-  completion popup. 
-  
+  completion popup.
+
 =============================================================================
  vim:tw=78:isk=!-~,^*,^\|,^\":ts=8:noet:ft=help:norl:

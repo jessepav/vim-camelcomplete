@@ -1,9 +1,7 @@
 # vim-camelcomplete
 
-Vim 9 plugin to complete `CamelCase` and `snake_case` identifier abbreviations.
-
-(**Note**: I've since rewritten this plugin in Lua, found in the [lua](https://github.com/jessepav/vim-camelcomplete/tree/lua)
- branch. This was done for performance, when running Vim built against LuaJIT) 
+Vim 9 plugin to complete `CamelCase`, `snake_case`, and `dash-words` identifier
+abbreviations.
 
 ## Introduction
 

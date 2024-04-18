@@ -8,28 +8,37 @@ vim9script
                         # CamelComplete, as in the days of old! #
                         #########################################
 
-# Regex to split words into camelCase or snake_case parts.
-#
-# It's composed of four parts:
-#
-#  1. lowercase to uppercase transition
-#  2. underscore
-#  3. digit to an alphabetic character transition
-#  4. alphabetic character to a digit transition
-#
-const split_word_re = ['\%([a-z]\zs\ze[A-Z]\)',
-                       '_\+',
-                       '\%(\d\zs\ze\a\)',
-                       '\%(\a\zs\ze\d\)']->join('\|')
+# Regexp definitions {{{1
 
-# These regexps are used to split a line into words, depending on whether
+# Regexp to gather word parts from a list of words.
+#
+# It's composed of divers parts:
+#
+#  1. Uppercase to lowercase transitions
+#  2. A run of uppercase letters preceding an uppercase-to-lowercase transition
+#  3. A run of uppercase letters at the end of a word or before a separator
+#  4. A run of lowercase letters at the start of a word
+#  5. A digit
+#  6. A run of lowercase letters after a separator
+#
+
+const word_parts_re = '\v' .. ['[A-Z][a-z]+',
+                               '[A-Z]{-1,}\ze[A-Z][a-z]',
+                               '[A-Z]+%(>|[\-_])',
+                               '<[a-z]+',
+                               '\d',
+                               '[\-_]\zs[a-z]+']->join('|')
+
+# These regexps are used to gather identifiers from a buffer, depending on whether
 # a dash '-' is a valid part of an identifier.
-const split_line_nodash_re = '\W\+'
-const split_line_dash_re = '[^A-Za-z0-9_-]\+'
+const identifier_nodash_re = '\v\I\i{3,}'
+const identifier_dash_re = '\v\I%(\i|-){3,}'
 
-# Our main index, which maps {bufnr: [b:changetick, abbrev_dict]}. An 'abbrev_dict', used
-# throughout the plugin, is a mapping from an abbreviation, like 'aSD' to a list of
-# possible completion entries, ex. ['allSaintsDay', 'avoidSomeDisaster']
+# Script-scope variables {{{1
+
+# Our main index, which maps {bufnr: [abbrev_dict, b:changetick, buffer name]}. An
+# 'abbrev_dict', used throughout the plugin, is a mapping from an abbreviation, like 'aSD'
+# to a list of possible completion entries, ex. ['allSaintsDay', 'avoidSomeDisaster']
 var buffer_abbrev_table: dict<list<any>> = {}
 
 # Used for regenerating our table if necessary
@@ -42,50 +51,51 @@ var last_casefold: bool = false
 #
 def CamelComplete(findstart: number, base_: string): any
   if findstart
-    const pos = match(getline('.'), '\w\+\%.c')
+    const pos = match(getline('.'), '\i\+\%.c')
     return pos >= 0 ? pos : -3
-  else
-    final casefold: bool = get(g:, 'camelcomplete_casefold') ? true : false
-    final prefixmatch: bool = get(g:, 'camelcomplete_prefix_match') ? true : false
-    final base: string = casefold ? tolower(base_) : base_
-
-    if last_refresh_mode == 0  # Make sure there's something to complete with
-      RefreshAbbrevTable(1, true)
-    elseif last_casefold != casefold
-      Debugprint("CamelComplete(): casefold mode changed: refreshing abbreviation table...")
-      RefreshAbbrevTable(3, true)
-    endif
-
-    # All the abbrev dicts that we'll examine in our loop below
-    final abbrev_dicts: list<dict<list<string>>> = []
-
-    # We do the current buffer's wordlist first, if it's available
-    const cur_bufnr = string(bufnr())
-    if has_key(buffer_abbrev_table, cur_bufnr)
-      add(abbrev_dicts, buffer_abbrev_table[cur_bufnr][1])
-    endif
-    # And then add the rest
-    for bufnr in keys(buffer_abbrev_table)
-      if bufnr !=# cur_bufnr
-        add(abbrev_dicts, buffer_abbrev_table[bufnr][1])
-      endif
-    endfor
-
-    var wordlist: list<string> = []  # The list of all candidate completions
-
-    for abbrev_dict in abbrev_dicts
-      if prefixmatch
-        for abbrev in keys(abbrev_dict)
-          if stridx(abbrev, base) == 0
-            extend(wordlist, get(abbrev_dict, abbrev))
-          endif
-        endfor
-      else
-        extend(wordlist, get(abbrev_dict, base, []))
-      endif
-    endfor
-    return wordlist
   endif
+
+  final casefold: bool = get(g:, 'camelcomplete_casefold') ? true : false
+  final prefixmatch: bool = get(g:, 'camelcomplete_prefix_match') ? true : false
+  final base: string = casefold ? tolower(base_) : base_
+
+  if last_refresh_mode == 0  # Make sure there's something to complete with
+    RefreshAbbrevTable(1, true)
+  elseif last_casefold != casefold
+    Debugprint("CamelComplete(): casefold mode changed: refreshing abbreviation table...")
+    RefreshAbbrevTable(3, true)
+  endif
+
+  # All the abbrev dicts that we'll examine in our loop below
+  final abbrev_dicts: list<dict<list<string>>> = []
+
+  # We do the current buffer's wordlist first, if it's available
+  const cur_bufnr = string(bufnr())
+  if has_key(buffer_abbrev_table, cur_bufnr)
+    add(abbrev_dicts, buffer_abbrev_table[cur_bufnr][0])
+  endif
+  # And then add the rest
+  for bufnr in keys(buffer_abbrev_table)
+    if bufnr !=# cur_bufnr
+      add(abbrev_dicts, buffer_abbrev_table[bufnr][0])
+    endif
+  endfor
+
+  var wordlist: list<string> = []  # The list of all candidate completions
+
+  for abbrev_dict in abbrev_dicts
+    if prefixmatch
+      for abbrev in keys(abbrev_dict)
+        if stridx(abbrev, base) == 0
+          extend(wordlist, get(abbrev_dict, abbrev))
+        endif
+      endfor
+    else
+      extend(wordlist, get(abbrev_dict, base, []))
+    endif
+  endfor
+  wordlist->filter((i, v) => v != base)   # do not suggest the base itself
+  return wordlist
 enddef
 
 # RefreshAbbrevTable() {{{1
@@ -123,6 +133,7 @@ def RefreshAbbrevTable(mode_: number, force_: bool = false)
     if mode == 1 && empty(bufinfos_to_examine)
       if bufinfo.bufnr == bufnr()
         add(bufinfos_to_examine, bufinfo)
+        # We do not break here because we need to keep updating our listed_bufnr_dict
       endif
     elseif mode == 2
       if !empty(bufinfo.windows)
@@ -144,17 +155,17 @@ def RefreshAbbrevTable(mode_: number, force_: bool = false)
   var bufs_processed = 0
   for bufinfo in bufinfos_to_examine
     const bufnr_str = string(bufinfo.bufnr)  # Since dicts are keyed by strings
-    if !has_key(buffer_abbrev_table, bufnr_str)
+    final bufentry: list<any> = buffer_abbrev_table->get(bufnr_str, null_list)
+    if bufentry == null_list
       final abbrev_dict = {}
       ProcessBuffer(bufinfo.bufnr, abbrev_dict, casefold)
-      buffer_abbrev_table[bufnr_str] = [bufinfo.changedtick, abbrev_dict]
+      buffer_abbrev_table[bufnr_str] = [abbrev_dict, bufinfo.changedtick, bufinfo.name]
       bufs_processed += 1
     else
-      final bufentry: list<any> = get(buffer_abbrev_table, bufnr_str)
-      if force || bufinfo.changedtick > bufentry[0]
-        filter(bufentry[1], (k, v) => false)   # Clear the abbrev dict
-        ProcessBuffer(bufinfo.bufnr, bufentry[1], casefold)
-        bufentry[0] = bufinfo.changedtick
+      if force || bufinfo.changedtick > bufentry[1]
+        filter(bufentry[0], (i, v) => false)   # Clear the abbrev dict
+        ProcessBuffer(bufinfo.bufnr, bufentry[0], casefold)
+        bufentry[1] = bufinfo.changedtick
         bufs_processed += 1
       endif
     endif
@@ -179,39 +190,51 @@ def ProcessBuffer(bufnr: number, abbrev_dict: dict<list<string>>, casefold: bool
   const dash_in_keywords: bool =
           getbufvar(bufnr, '&filetype') == 'html' ||
           stridx(isk, ',-') != -1 || stridx(isk, '-,') != -1
-  const split_line_re = dash_in_keywords ? split_line_dash_re : split_line_nodash_re
-  # Keep track of words we've already encountered, so that we can `continue` the loop
-  # early and avoid the expensive splitting and joining further down.
+  const identifier_re = dash_in_keywords ? identifier_dash_re : identifier_nodash_re
+
+  # First we gather all the unique words into a list
+  final bufwords: list<string> = []
   final seen_words: dict<bool> = {}
-  for line in getbufline(bufnr, 1, '$')
-    for word in split(line, split_line_re)
-      if len(word) < 4 || has_key(seen_words, word)
-        continue
-      endif
-      var parts: list<string>
-      # If a language allows dashes in keywords and this word has a dash, assume that the
-      # dashes are what separates the components rather than the usual camel-transitions.
-      if dash_in_keywords && stridx(word, '-') != -1
-        parts = split(word, '-', false)
-      else
-        parts = split(word, split_word_re, false)
-      endif
-      if len(parts) == 1  # There's no point in indexing this
-        continue
-      endif
-      var abbrev = join(map(parts, (k, v) => v[0]), '')
-      if casefold
-        abbrev = tolower(abbrev)
-      endif
-      final wordlist: list<string> = get(abbrev_dict, abbrev, null_list)
-      if wordlist == null_list
-        abbrev_dict[abbrev] = [word]
-      else  # We are guaranteed not to have seen the word before
-        add(wordlist, word)
-      endif
+  final matches = matchbufline(bufnr, identifier_re, 1, '$')
+  for match in matches
+    const word = match.text
+    if !has_key(seen_words, word)
+      bufwords->add(word)
       seen_words[word] = true
-    endfor
+    endif
   endfor
+
+  # Now we process the word parts
+  def ProcessWordParts(wordparts: list<string>, word: string)
+    if len(wordparts) < 2  # there's no point in indexing this
+      return
+    endif
+    var abbrev = join(map(wordparts, (k, v) => v[0]), '')
+    if casefold
+      abbrev = tolower(abbrev)
+    endif
+    final wordlist: list<string> = abbrev_dict->get(abbrev, null_list)
+    if wordlist == null_list
+      abbrev_dict[abbrev] = [word]
+    else
+      add(wordlist, word)
+    endif
+  enddef
+
+  var curidx = 0
+  var wordparts = []
+  final word_part_matches = matchstrlist(bufwords, word_parts_re)
+  for partmatch in word_part_matches
+    if partmatch.idx != curidx  # We've gathered a whole word's parts
+      ProcessWordParts(wordparts, bufwords[curidx])
+      wordparts = []
+      curidx = partmatch.idx
+    endif
+    wordparts->add(partmatch.text)
+  endfor
+  if len(wordparts) != 0
+    ProcessWordParts(wordparts, bufwords[-1])
+  endif
 enddef
 
 # DumpBufAbbrevMap() {{{1
@@ -232,7 +255,7 @@ enddef
 # Clear the main abbreviation table -- useful during profiling.
 #
 def ClearAbbrevMap()
-  filter(buffer_abbrev_table, (k, v) => false)
+  filter(buffer_abbrev_table, (i, v) => false)
 enddef
 
 # Debugprint() {{{1
@@ -246,9 +269,7 @@ def Debugprint(msg: string)
   endif
 enddef
 
-# }}}1
-
-# -------------------- Mappings and such --------------------
+# Mappings and commands -------------------- {{{1
 
 nnoremap <Plug>CamelCompleteRefreshCurrentBuffer  <ScriptCmd>RefreshAbbrevTable(1)<CR>
 nnoremap <Plug>CamelCompleteRefreshVisibleBuffers <ScriptCmd>RefreshAbbrevTable(2)<CR>
