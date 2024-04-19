@@ -26,9 +26,9 @@ As an example (with \* representing the cursor position),
   obj.sFM* --> (invoke camelcomplete) --> obj.setForwardMark*
 ```
 
-**Note**: for performance (well, at least compared with legacy Vimscript), this plugin is
-written in `vim9script` so you'll need Vim 9 (or perhaps a late 8.2 would work as well,
-though I haven't tested it).
+**Note**: for performance, this plugin is written in `vim9script` using the
+`matchbufline()` and `matchstrlist()` functions introduced in Vim `v9.1.0009`, and thus
+you'll need a sufficiently new version of Vim to use it.
 
 ## Installation
 
@@ -47,8 +47,8 @@ Quick Start:
 In your `.vimrc`, add these lines
 
 ```
-  CamelCompleteInstall
-  imap <C-X><C-A>    <Plug>CamelCompleteRefreshAndComplete
+CamelCompleteInstall
+inoremap <C-X><C-A>    <Cmd>CamelCompleteRefreshBuffers 3<CR><C-X><C-U>
 ```
 
 This will set `'completefunc'` to a script‑local completion function in
