@@ -1,7 +1,7 @@
 vim9script
 
-# Vim plugin for completing CamelCase and snake_case words from their abbreviations.
-# Last Change: May 18, 2023
+# Vim plugin for CamelCase, snake_case, and dash-words completion.
+# Last Change: April 18, 2024
 # Maintainer:	Jesse Pavel <jpavel@gmail.com>
 
                         #########################################
@@ -31,8 +31,8 @@ const word_parts_re = '\v' .. ['[A-Z][a-z]+',
 
 # These regexps are used to gather identifiers from a buffer, depending on whether
 # a dash '-' is a valid part of an identifier.
-const identifier_nodash_re = '\v\I\i{3,}'
-const identifier_dash_re = '\v\I%(\i|-){3,}'
+const identifier_nodash_re = '\v[A-Za-z_][A-Za-z0-9_]{3,}'
+const identifier_dash_re = '\v[A-Za-z_][A-Za-z0-9_\-]{3,}'
 
 # Script-scope variables {{{1
 
@@ -109,7 +109,11 @@ enddef
 #
 # If `force` is true, we refresh without checking for buffer modification.
 #
-def RefreshAbbrevTable(mode_: number, force_: bool = false)
+# If curbuf_surrounding_lines > 0, and the current buffer already has an entry in the
+# buffer_abbrev_table, we search only the given number of lines around the cursor, instead
+# of refreshing the whole buffer. This is useful for large files.
+
+def RefreshAbbrevTable(mode_: number, force_: bool = false, curbuf_surrounding_lines: number = 0)
   final listed_bufinfo = getbufinfo({ buflisted: 1 })
   final listed_bufnr_dict: dict<bool> = {} # Used to track which buffers still exist
   final bufinfos_to_examine: list<dict<any>> = []
@@ -158,13 +162,22 @@ def RefreshAbbrevTable(mode_: number, force_: bool = false)
     final bufentry: list<any> = buffer_abbrev_table->get(bufnr_str, null_list)
     if bufentry == null_list
       final abbrev_dict = {}
-      ProcessBuffer(bufinfo.bufnr, abbrev_dict, casefold)
+      ProcessBuffer(bufinfo.bufnr, abbrev_dict, casefold, 1, line('$'))
       buffer_abbrev_table[bufnr_str] = [abbrev_dict, bufinfo.changedtick, bufinfo.name]
       bufs_processed += 1
     else
       if force || bufinfo.changedtick > bufentry[1]
-        filter(bufentry[0], (i, v) => false)   # Clear the abbrev dict
-        ProcessBuffer(bufinfo.bufnr, bufentry[0], casefold)
+        final abbrev_dict = bufentry[0]
+        if bufinfo.bufnr == bufnr() && curbuf_surrounding_lines > 0
+          # (We leave the abbrev dict alone on purpose.)
+          const curline = line('.')
+          ProcessBuffer(bufinfo.bufnr, abbrev_dict, casefold,
+                        max([1, curline - curbuf_surrounding_lines]),
+                        min([line('$'), curline + curbuf_surrounding_lines]))
+        else
+          filter(abbrev_dict, (i, v) => false)   # Clear the abbrev dict
+          ProcessBuffer(bufinfo.bufnr, abbrev_dict, casefold, 1, line('$'))
+        endif
         bufentry[1] = bufinfo.changedtick
         bufs_processed += 1
       endif
@@ -182,7 +195,10 @@ enddef
 # mappings in `abbrev_dict` from their abbreviations to a list of matching words.
 # If `casefold` is true, then abbreviations (i.e. the keys in the dict) will be lowercase.
 #
-def ProcessBuffer(bufnr: number, abbrev_dict: dict<list<string>>, casefold: bool)
+# first_line and last_line give the range of line numbers in the buffer to process.
+
+def ProcessBuffer(bufnr: number, abbrev_dict: dict<list<string>>, casefold: bool,
+                  first_line: number, last_line: number)
   # If the language of a buffer has dashes in keywords (like CSS or HTML),
   # then we will handle dashes in our abbreviations.
   const isk = getbufvar(bufnr, '&iskeyword')
@@ -195,7 +211,14 @@ def ProcessBuffer(bufnr: number, abbrev_dict: dict<list<string>>, casefold: bool
   # First we gather all the unique words into a list
   final bufwords: list<string> = []
   final seen_words: dict<bool> = {}
-  final matches = matchbufline(bufnr, identifier_re, 1, '$')
+  if !empty(abbrev_dict)  # We might have some words in there already
+    for wordlist in abbrev_dict->values()
+      for word in wordlist
+        seen_words[word] = true
+      endfor
+    endfor
+  endif
+  final matches = matchbufline(bufnr, identifier_re, first_line, last_line)
   for match in matches
     const word = match.text
     if !has_key(seen_words, word)
@@ -271,18 +294,20 @@ enddef
 
 # Mappings and commands -------------------- {{{1
 
-nnoremap <Plug>CamelCompleteRefreshCurrentBuffer  <ScriptCmd>RefreshAbbrevTable(1)<CR>
-nnoremap <Plug>CamelCompleteRefreshVisibleBuffers <ScriptCmd>RefreshAbbrevTable(2)<CR>
-nnoremap <Plug>CamelCompleteRefreshAllBuffers     <ScriptCmd>RefreshAbbrevTable(3)<CR>
-inoremap <Plug>CamelCompleteRefreshCurrentBuffer  <ScriptCmd>RefreshAbbrevTable(1)<CR>
-inoremap <Plug>CamelCompleteRefreshVisibleBuffers <ScriptCmd>RefreshAbbrevTable(2)<CR>
-inoremap <Plug>CamelCompleteRefreshAllBuffers     <ScriptCmd>RefreshAbbrevTable(3)<CR>
+# Marshals strings to numbers and passes them along to RefreshAbbrevTable()
+def RefreshBuffersCommand(mode: string, curbuf_surrounding_lines: string = "0")
+  RefreshAbbrevTable(str2nr(mode), false, str2nr(curbuf_surrounding_lines))
+enddef
 
-inoremap <Plug>CamelCompleteRefreshAndComplete    <ScriptCmd>RefreshAbbrevTable(3)<CR><C-X><C-U>
+def ExportCompletionFunction(name: string)
+  g:[name] = CamelComplete
+enddef
 
 command! -nargs=0 CamelCompleteInstall            set completefunc=CamelComplete
+command! -nargs=+ CamelCompleteRefreshBuffers     RefreshBuffersCommand(<f-args>)
 command! -nargs=? CamelCompleteDumpBufAbbrevMap   DumpBufAbbrevMap(<args>)
 command! -nargs=0 CamelCompleteClearAbbrevMap     ClearAbbrevMap()
+command! -nargs=1 CamelCompleteExportFunc         ExportCompletionFunction(<f-args>)
 
 if empty(&completefunc)
   set completefunc=CamelComplete

@@ -16,7 +16,7 @@ INTRODUCTION				    *camelcomplete* *CamelComplete*
 
 This plugin provides an insert-mode completion function that allows you to
 expand `CamelCase`, `snake_case`, and (if appropriate for the filetype) `dash-words`
-abbreviations into their full identifiers.  For instance,
+abbreviations into their full identifiers. For instance,
 
   Identifier		Abbreviation ~
   setForwardMark	`sFM`
@@ -37,14 +37,14 @@ and thus you'll need a sufficiently new version of Vim to use it.
 CONFIGURATION				    *camelcomplete-configuration*
 
 Once `camelcomplete` is installed (see README.md for details), you'll have a
-number of new <Plug> mappings to use as the {rhs} of your own `imap`.
+few new commands and a completion function (see |complete-functions|) to use.
 
 Quick Start:
 
 In your `.vimrc`, add these lines
 >
   CamelCompleteInstall
-  imap <C-X><C-A>    <Plug>CamelCompleteRefreshAndComplete
+  inoremap <C-X><C-A>    <Cmd>CamelCompleteRefreshBuffers 3<CR><C-X><C-U>
 <
 This will set 'completefunc' to a script-local completion function in
 `camelcomplete.vim`, and set up <C-X><C-A> to scan all listed buffers and
@@ -76,27 +76,45 @@ popup.
 3. REFERENCE					   *camelcomplete-reference*
 
 For finer-grained control over symbol scanning, you can choose among these
-three <Plug> mappings:
+three modes to use as an argument to the `CamelCompleteRefreshBuffers`
+command (the '3' in the Quick Start section).
 
-  <Plug>CamelCompleteRefreshCurrentBuffer
-  <Plug>CamelCompleteRefreshVisibleBuffers
-  <Plug>CamelCompleteRefreshAllBuffers
+  1    Refresh only the current buffer
+  2    Refresh visible buffers
+  3    Refresh all listed buffers
 
-They work in both insert and normal mode, and will refresh camelcomplete's
-internal abbreviation-symbol index for the current buffer, visible buffers,
-and all listed buffers, respectively. And then completion can be invoked using
-the standard <C-X><C-U> "user-defined completion" sequence.
+After a refresh has been performed, completion can be invoked using the
+standard <C-X><C-U> "user-defined completion" sequence.
 
 So if you wanted to make a mapping that would scan only the current buffer and
 perform completion, you could for instance use
 
-  imap <C-X><C-B> <Plug>CamelCompleteRefreshCurrentBuffer<C-X><C-U>
+  inoremap <C-X><C-B> <Cmd>CamelCompleteRefreshBuffers 1<CR><C-X><C-U>
 
+`CamelCompleteRefreshBuffers` can take an optional second parameter that
+restricts the search for identifiers in the current buffer to a given number
+of lines around the cursor. For example, if you want to refresh identifiers
+only in the 100 lines before and after the cursor, you could create a mapping
 
-`CamelCompleteInstall`				    *CamelCompleteInstall*
+  inoremap <C-X><C-B> <Cmd>CamelCompleteRefreshBuffers 1 100<CR><C-X><C-U>
+
+This is useful if you frequently refresh-and-complete in the current buffer,
+and the buffer is large.
+
+`CamelCompleteInstall`				    *camelcomplete-install*
 
 This command simply sets 'completefunc' to the script-local `CamelComplete`
 function. It exists only because `CamelComplete()` is not globally visible.
+
+`CamelCompleteExportFunc`			*camelcomplete-export-func*
+
+If you don't want to use camelcomplete directly as the 'completefunc', you can
+assign its completion function (see |complete-functions|) to a global variable
+by running the command
+
+  CamelCompleteExportFunc <name>
+
+Note that `<name>` must start with a capital letter, or you'll get an error.
 
 =============================================================================
 
@@ -106,15 +124,9 @@ Fast Buffer Scans ~
 
   The plugin keeps track of when each buffer changes (using `b:changedtick`)
   and so it won't re-parse buffers which haven't changed since its last scan.
-  Thus, even when using a mapping like '<Plug>CamelCompleteRefreshAllBuffers'
-  or '<Plug>CamelCompleteRefreshAndComplete', which nominally refresh all
-  listed buffers, the command will run quickly since unmodified buffers are
-  skipped.
-
-  If, however, you're editing a very large buffer (in which case it will be
-  scanned every time), you can use <C-X><C-U> to complete instantly most of
-  the time, and your `CamelCompleteRefresh` mapping only when you need the
-  plugin to discover new identifiers.
+  Thus, even when running 'CamelCompleteRefreshBuffers 3' , which nominally
+  refresh all listed buffers, the command will run quickly since unmodified
+  buffers are skipped.
 
 Candidate Ordering ~
 
