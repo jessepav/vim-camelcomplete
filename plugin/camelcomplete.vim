@@ -16,7 +16,7 @@ vim9script
 #
 #  1. Uppercase to lowercase transitions
 #  2. A run of uppercase letters preceding an uppercase-to-lowercase transition
-#  3. A run of uppercase letters at the end of a word or before a separator
+#  3. A run of all uppercase or all lowercase letters at the end of a word or before a separator
 #  4. A run of lowercase letters at the start of a word
 #  5. A digit
 #  6. A run of lowercase letters after a separator
@@ -24,15 +24,15 @@ vim9script
 
 const word_parts_re = '\v' .. ['[A-Z][a-z]+',
                                '[A-Z]{-1,}\ze[A-Z][a-z]',
-                               '[A-Z]+%(>|[\-_])',
+                               '%([A-Z]+|[a-z]+)\ze%(>|[\-_0-9])',
                                '<[a-z]+',
                                '\d',
                                '[\-_]\zs[a-z]+']->join('|')
 
 # These regexps are used to gather identifiers from a buffer, depending on whether
 # a dash '-' is a valid part of an identifier.
-const identifier_nodash_re = '\v[A-Za-z_][A-Za-z0-9_]{3,}'
-const identifier_dash_re = '\v[A-Za-z_][A-Za-z0-9_\-]{3,}'
+const identifier_nodash_re = '\v<[A-Za-z_][A-Za-z0-9_]{3,}>'
+const identifier_dash_re = '\v<[A-Za-z_][A-Za-z0-9_\-]{3,}>'
 
 # Script-scope variables {{{1
 
