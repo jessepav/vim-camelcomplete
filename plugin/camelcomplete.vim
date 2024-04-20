@@ -1,7 +1,7 @@
 vim9script
 
 # Vim plugin for CamelCase, snake_case, and dash-words completion.
-# Last Change: April 18, 2024
+# Last Change: April 20, 2024
 # Maintainer:	Jesse Pavel <jpavel@gmail.com>
 
                         #########################################
@@ -218,14 +218,25 @@ def ProcessBuffer(bufnr: number, abbrev_dict: dict<list<string>>, casefold: bool
       endfor
     endfor
   endif
-  final matches = matchbufline(bufnr, identifier_re, first_line, last_line)
-  for match in matches
-    const word = match.text
-    if !has_key(seen_words, word)
-      bufwords->add(word)
-      seen_words[word] = true
-    endif
-  endfor
+  if get(g:, 'camelcomplete_use_rg') != 0
+    const bufpath = getbufinfo(bufnr)[0].name
+    final matches = systemlist($"rg -wo '{identifier_re[3 : -2]}' '{bufpath}'")
+    for word in matches
+      if !has_key(seen_words, word)
+        bufwords->add(word)
+        seen_words[word] = true
+      endif
+    endfor
+  else
+    final matches = matchbufline(bufnr, identifier_re, first_line, last_line)
+    for match in matches
+      const word = match.text
+      if !has_key(seen_words, word)
+        bufwords->add(word)
+        seen_words[word] = true
+      endif
+    endfor
+  endif
 
   # Now we process the word parts
   def ProcessWordParts(wordparts: list<string>, word: string)

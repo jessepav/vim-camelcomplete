@@ -29,7 +29,7 @@ As an example (with * representing the cursor position),
   obj.sFM* --> (invoke camelcomplete) --> obj.setForwardMark*
 <
 Note: for performance, this plugin is written in `vim9script` using the
-`matchbufline()` and `matchstrlist()` functions introduced in Vim `v9.1.0009`,
+|matchbufline()| and |matchstrlist()| functions introduced in Vim `v9.1.0009`,
 and thus you'll need a sufficiently new version of Vim to use it.
 
 =============================================================================
@@ -71,6 +71,14 @@ Both of these options represent a tradeoff between the ease of typing
 abbreviations and having a reasonable number of candidates in the completion
 popup.
 
+For huge files, even the |matchbufline()| internal function may be too slow in
+gathering all the identifers. In this case, if you have ripgrep (i.e. rg)
+installed on your system, you can use it to gather the identifiers from a
+buffer:
+>
+  let g:camelcomplete_use_rg = 1
+<
+
 =============================================================================
 
 3. REFERENCE					   *camelcomplete-reference*
@@ -101,12 +109,12 @@ only in the 100 lines before and after the cursor, you could create a mapping
 This is useful if you frequently refresh-and-complete in the current buffer,
 and the buffer is large.
 
-`CamelCompleteInstall`				    *camelcomplete-install*
+`CamelCompleteInstall`
 
 This command simply sets 'completefunc' to the script-local `CamelComplete`
 function. It exists only because `CamelComplete()` is not globally visible.
 
-`CamelCompleteExportFunc`			*camelcomplete-export-func*
+`CamelCompleteExportFunc`
 
 If you don't want to use camelcomplete directly as the 'completefunc', you can
 assign its completion function (see |complete-functions|) to a global variable
@@ -122,7 +130,7 @@ NOTES						   *camelcomplete-notes*
 
 Fast Buffer Scans ~
 
-  The plugin keeps track of when each buffer changes (using `b:changedtick`)
+  The plugin keeps track of when each buffer changes (using |b:changedtick|)
   and so it won't re-parse buffers which haven't changed since its last scan.
   Thus, even when running 'CamelCompleteRefreshBuffers 3' , which nominally
   refresh all listed buffers, the command will run quickly since unmodified
