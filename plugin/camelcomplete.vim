@@ -218,8 +218,8 @@ def ProcessBuffer(bufnr: number, abbrev_dict: dict<list<string>>, casefold: bool
       endfor
     endfor
   endif
-  if get(g:, 'camelcomplete_use_rg') != 0
-    const bufpath = getbufinfo(bufnr)[0].name
+  const bufpath = getbufinfo(bufnr)[0].name
+  if get(g:, 'camelcomplete_use_rg') != 0 && !bufpath->empty()
     # The identifier_re indicies are to strip off Vim-specific syntax
     final matches = systemlist($"rg -wo '{identifier_re[8 : -2]}' '{bufpath}'")
     for word in matches
