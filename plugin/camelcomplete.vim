@@ -162,7 +162,7 @@ def RefreshAbbrevTable(mode_: number, force_: bool = false, curbuf_surrounding_l
     final bufentry: list<any> = buffer_abbrev_table->get(bufnr_str, null_list)
     if bufentry == null_list
       final abbrev_dict = {}
-      ProcessBuffer(bufinfo.bufnr, abbrev_dict, casefold, 1, line('$'))
+      ProcessBuffer(bufinfo.bufnr, abbrev_dict, casefold, 1, bufinfo.linecount)
       buffer_abbrev_table[bufnr_str] = [abbrev_dict, bufinfo.changedtick, bufinfo.name]
       bufs_processed += 1
     else
@@ -173,10 +173,10 @@ def RefreshAbbrevTable(mode_: number, force_: bool = false, curbuf_surrounding_l
           const curline = line('.')
           ProcessBuffer(bufinfo.bufnr, abbrev_dict, casefold,
                         max([1, curline - curbuf_surrounding_lines]),
-                        min([line('$'), curline + curbuf_surrounding_lines]))
+                        min([bufinfo.linecount, curline + curbuf_surrounding_lines]))
         else
           filter(abbrev_dict, (i, v) => false)   # Clear the abbrev dict
-          ProcessBuffer(bufinfo.bufnr, abbrev_dict, casefold, 1, line('$'))
+          ProcessBuffer(bufinfo.bufnr, abbrev_dict, casefold, 1, bufinfo.linecount)
         endif
         bufentry[1] = bufinfo.changedtick
         bufs_processed += 1
