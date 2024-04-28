@@ -31,8 +31,8 @@ const word_parts_re = '\v' .. ['[A-Z][a-z]+',
 
 # These regexps are used to gather identifiers from a buffer, depending on whether
 # a dash '-' is a valid part of an identifier.
-const identifier_nodash_re = '\v<[A-Za-z_][A-Za-z0-9_]{3,}>'
-const identifier_dash_re = '\v<[A-Za-z_][A-Za-z0-9_\-]{3,}>'
+const identifier_nodash_re = '\%#=2\v<[A-Za-z_][A-Za-z0-9_]{3,}>'
+const identifier_dash_re = '\%#=2\v<[A-Za-z_][A-Za-z0-9_\-]{3,}>'
 
 # Script-scope variables {{{1
 
@@ -220,7 +220,8 @@ def ProcessBuffer(bufnr: number, abbrev_dict: dict<list<string>>, casefold: bool
   endif
   if get(g:, 'camelcomplete_use_rg') != 0
     const bufpath = getbufinfo(bufnr)[0].name
-    final matches = systemlist($"rg -wo '{identifier_re[3 : -2]}' '{bufpath}'")
+    # The identifier_re indicies are to strip off Vim-specific syntax
+    final matches = systemlist($"rg -wo '{identifier_re[8 : -2]}' '{bufpath}'")
     for word in matches
       if !has_key(seen_words, word)
         bufwords->add(word)
