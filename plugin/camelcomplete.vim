@@ -69,16 +69,8 @@ def CamelComplete(findstart: number, base_: string): any
   # All the abbrev dicts that we'll examine in our loop below
   final abbrev_dicts: list<dict<list<string>>> = []
 
-  # We do the current buffer's wordlist first, if it's available
-  const cur_bufnr = string(bufnr())
-  if has_key(buffer_abbrev_table, cur_bufnr)
-    add(abbrev_dicts, buffer_abbrev_table[cur_bufnr][0])
-  endif
-  # And then add the rest
-  for bufnr in keys(buffer_abbrev_table)
-    if bufnr !=# cur_bufnr
-      add(abbrev_dicts, buffer_abbrev_table[bufnr][0])
-    endif
+  for entry in values(buffer_abbrev_table)
+    add(abbrev_dicts, entry[0])
   endfor
 
   var wordlist: list<string> = []  # The list of all candidate completions
@@ -95,6 +87,27 @@ def CamelComplete(findstart: number, base_: string): any
     endif
   endfor
   wordlist->filter((i, v) => v != base)   # do not suggest the base itself
+  if len(wordlist) <= 50   # if short enough, sort the list by closeness to the current line
+    const curlnum = line('.')
+
+    def LineDistance(word: string): number
+      const searchbackline = search('\<' .. word .. '\>', 'bnWz')
+      const searchforwline = search('\<' .. word .. '\>', 'nWz')
+      var backdist: number = searchbackline == 0 ? 100000 : abs(curlnum - searchbackline)
+      var forwdist: number = searchforwline == 0 ? 100000 : abs(curlnum - searchforwline)
+      return backdist < forwdist ? backdist : forwdist
+    enddef
+
+    var word_dists: list<list<any>> = []
+    for word in wordlist
+      word_dists->add([word, LineDistance(word)])
+    endfor
+    word_dists->sort((e1, e2) => e1[1] - e2[1])
+    wordlist = []
+    for entry in word_dists
+      wordlist->add(entry[0])
+    endfor
+  endif
   return wordlist
 enddef
 

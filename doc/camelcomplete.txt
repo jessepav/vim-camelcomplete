@@ -2,6 +2,7 @@
 
 Author:  Jesse Pavel <jpavel@gmail.com>
 License: MIT
+Updated: May 6, 2024
 
 =============================================================================
 
@@ -138,9 +139,8 @@ Fast Buffer Scans ~
 
 Candidate Ordering ~
 
-  Even if the abbreviation-identifier index contains entries from all buffers,
-  camelcomplete will put identifiers from the current buffer at the top of the
-  completion popup.
+  If there are 50 or fewer completion candidates, CamelComplete will sort them
+  by distance from the cursor line, so that the closest matches appear first.
 
 =============================================================================
  vim:tw=78:isk=!-~,^*,^\|,^\":ts=8:noet:ft=help:norl:
