@@ -45,7 +45,7 @@ var buffer_abbrev_table: dict<list<any>> = {}
 var last_refresh_mode: number = 0
 var last_casefold: bool = false
 
-# CamelComplete() {{{1
+# CamelComplete() and helpers {{{1
 #
 # A completion function (:h complete-functions), for use with 'completefunc' or 'omnifunc'
 #
@@ -69,8 +69,18 @@ def CamelComplete(findstart: number, base_: string): any
   # All the abbrev dicts that we'll examine in our loop below
   final abbrev_dicts: list<dict<list<string>>> = []
 
-  for entry in values(buffer_abbrev_table)
-    add(abbrev_dicts, entry[0])
+  # We add the current buffer's wordlist first, if it's available
+  const cur_bufnr = string(bufnr())
+  var need_sort = false  # indicates that we should sort the current buffer's words by line distance
+  if has_key(buffer_abbrev_table, cur_bufnr)
+    add(abbrev_dicts, buffer_abbrev_table[cur_bufnr][0])
+    need_sort = true
+  endif
+  # And then add the rest
+  for [bufnr, entry] in items(buffer_abbrev_table)
+    if bufnr != cur_bufnr
+      add(abbrev_dicts, entry[0])
+    endif
   endfor
 
   var wordlist: list<string> = []  # The list of all candidate completions
@@ -85,30 +95,37 @@ def CamelComplete(findstart: number, base_: string): any
     else
       extend(wordlist, get(abbrev_dict, base, []))
     endif
+    if need_sort  # if present, the abbrev_dict for the current buffer will be first in abbrev_dicts
+      SortByLineDistance(wordlist)
+      need_sort = false
+    endif
   endfor
   wordlist->filter((i, v) => v != base)   # do not suggest the base itself
-  if len(wordlist) <= 50   # if short enough, sort the list by closeness to the current line
-    const curlnum = line('.')
-
-    def LineDistance(word: string): number
-      const searchbackline = search('\<' .. word .. '\>', 'bnWz')
-      const searchforwline = search('\<' .. word .. '\>', 'nWz')
-      var backdist: number = searchbackline == 0 ? 100000 : abs(curlnum - searchbackline)
-      var forwdist: number = searchforwline == 0 ? 100000 : abs(curlnum - searchforwline)
-      return backdist < forwdist ? backdist : forwdist
-    enddef
-
-    var word_dists: list<list<any>> = []
-    for word in wordlist
-      word_dists->add([word, LineDistance(word)])
-    endfor
-    word_dists->sort((e1, e2) => e1[1] - e2[1])
-    wordlist = []
-    for entry in word_dists
-      wordlist->add(entry[0])
-    endfor
-  endif
   return wordlist
+enddef
+
+def SortByLineDistance(wordlist: list<string>)
+  const curlnum = line('.')
+  const stopline_back = max([1, curlnum - 200])
+  const stopline_forw = min([line('$'), curlnum + 200])
+
+  def LineDistance(word: string): number
+    const searchbackline = search('\<' .. word .. '\>', 'bnWz', stopline_back)
+    const searchforwline = search('\<' .. word .. '\>', 'nWz', stopline_forw)
+    var backdist: number = searchbackline == 0 ? 100000 : abs(curlnum - searchbackline)
+    var forwdist: number = searchforwline == 0 ? 100000 : abs(curlnum - searchforwline)
+    return backdist < forwdist ? backdist : forwdist
+  enddef
+
+  var word_dists: list<list<any>> = []
+  for word in wordlist
+    word_dists->add([word, LineDistance(word)])
+  endfor
+  word_dists->sort((e1, e2) => e1[1] - e2[1])
+  wordlist->filter('0')
+  for entry in word_dists
+    wordlist->add(entry[0])
+  endfor
 enddef
 
 # RefreshAbbrevTable() {{{1

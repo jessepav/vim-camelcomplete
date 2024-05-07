@@ -139,8 +139,8 @@ Fast Buffer Scans ~
 
 Candidate Ordering ~
 
-  If there are 50 or fewer completion candidates, CamelComplete will sort them
-  by distance from the cursor line, so that the closest matches appear first.
+  CamelComplete will sort the completion candidates from the current buffer by
+  distance from the cursor line, so that the closest matches appear first.
 
 =============================================================================
  vim:tw=78:isk=!-~,^*,^\|,^\":ts=8:noet:ft=help:norl:
