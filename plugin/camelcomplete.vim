@@ -144,7 +144,7 @@ enddef
 # of refreshing the whole buffer. This is useful for large files.
 
 def RefreshAbbrevTable(mode_: number, force_: bool = false, curbuf_surrounding_lines: number = 0)
-  final listed_bufinfo = getbufinfo({ buflisted: 1 })
+  final listed_bufinfo = getbufinfo({ buflisted: 1, bufloaded: 1 })
   final listed_bufnr_dict: dict<bool> = {} # Used to track which buffers still exist
   final bufinfos_to_examine: list<dict<any>> = []
   final casefold: bool = get(g:, 'camelcomplete_casefold') ? true : false
